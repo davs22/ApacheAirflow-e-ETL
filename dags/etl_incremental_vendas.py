@@ -33,8 +33,10 @@ with DAG(
             LEFT JOIN stg.ProductCategory c ON s.ProductCategoryID = c.ProductCategoryID
             WHERE p.ModifiedDate >= '{{ ds }}'
             ON CONFLICT (product_id) DO UPDATE 
-            SET nome_produto = EXCLUDED.nome_produto, 
-                categoria = EXCLUDED.categoria, 
+            SET nome_produto = EXCLUDED.nome_produto,
+                numero_produto = EXCLUDED.numero_produto,
+                categoria = EXCLUDED.categoria,
+                subcategoria = EXCLUDED.subcategoria,
                 data_carga = CURRENT_TIMESTAMP;
         """
     )
@@ -44,10 +46,14 @@ with DAG(
         conn_id='postgres_default',
         sql="""
             INSERT INTO dw_d_territorio (territory_id, nome_territorio, codigo_pais, regiao)
-            SELECT TerritoryID, Name, CountryRegionCode, "Group"
+            SELECT TerritoryID, Name, CountryRegionCode, "group"
             FROM stg.SalesTerritory
             WHERE ModifiedDate >= '{{ ds }}'
-            ON CONFLICT (territory_id) DO NOTHING;
+            ON CONFLICT (territory_id) DO UPDATE
+            SET nome_territorio = EXCLUDED.nome_territorio,
+                codigo_pais = EXCLUDED.codigo_pais,
+                regiao = EXCLUDED.regiao,
+                data_carga = CURRENT_TIMESTAMP;
         """
     )
 
@@ -61,7 +67,10 @@ with DAG(
                    CASE WHEN PersonID IS NULL THEN 'Loja' ELSE 'Pessoa Física' END
             FROM stg.Customer
             WHERE ModifiedDate >= '{{ ds }}'
-            ON CONFLICT (customer_id) DO NOTHING;
+            ON CONFLICT (customer_id) DO UPDATE
+            SET nome_cliente = EXCLUDED.nome_cliente,
+                tipo_cliente = EXCLUDED.tipo_cliente,
+                data_carga = CURRENT_TIMESTAMP;
         """
     )
 
@@ -82,15 +91,28 @@ with DAG(
                 sod.UnitPriceDiscount,
                 COALESCE(p.StandardCost, 0),
                 sod.LineTotal,
-                sod.ModifiedDate
+                GREATEST(sod.ModifiedDate, soh.ModifiedDate)
             FROM stg.SalesOrderDetail sod
             INNER JOIN stg.SalesOrderHeader soh ON sod.SalesOrderID = soh.SalesOrderID
             INNER JOIN stg.Product p ON sod.ProductID = p.ProductID
             INNER JOIN dw_d_produto dp ON dp.product_id = sod.ProductID
             INNER JOIN dw_d_cliente dc ON dc.customer_id = soh.CustomerID
             INNER JOIN dw_d_territorio dt ON dt.territory_id = soh.TerritoryID
-            WHERE sod.ModifiedDate >= '{{ ds }}' 
-               OR soh.ModifiedDate >= '{{ ds }}';
+            WHERE sod.ModifiedDate >= '{{ ds }}'
+               OR soh.ModifiedDate >= '{{ ds }}'
+            ON CONFLICT (sales_order_detail_id) DO UPDATE
+            SET sk_produto = EXCLUDED.sk_produto,
+                sk_cliente = EXCLUDED.sk_cliente,
+                sk_territorio = EXCLUDED.sk_territorio,
+                sk_data_pedido = EXCLUDED.sk_data_pedido,
+                sales_order_id = EXCLUDED.sales_order_id,
+                quantidade = EXCLUDED.quantidade,
+                preco_unitario = EXCLUDED.preco_unitario,
+                desconto = EXCLUDED.desconto,
+                custo_padrao = EXCLUDED.custo_padrao,
+                valor_total = EXCLUDED.valor_total,
+                data_modificacao = EXCLUDED.data_modificacao,
+                data_carga = CURRENT_TIMESTAMP;
         """
     )
 

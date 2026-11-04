@@ -1,6 +1,4 @@
-DROP TABLE IF EXISTS dw_d_produto CASCADE;
-
-CREATE TABLE dw_d_produto (
+CREATE TABLE IF NOT EXISTS dw_d_produto (
     sk_produto SERIAL PRIMARY KEY,
     product_id INT NOT NULL UNIQUE, -- Chave de negócio (Natural Key)
     nome_produto VARCHAR(255) NOT NULL,

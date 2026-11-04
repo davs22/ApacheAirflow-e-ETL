@@ -23,7 +23,7 @@ CREATE TABLE stg.Product (
 
 CREATE TABLE stg.SalesTerritory (
     TerritoryID INT PRIMARY KEY, Name VARCHAR(50), CountryRegionCode VARCHAR(3), 
-    "Group" VARCHAR(50), ModifiedDate TIMESTAMP
+    "group" VARCHAR(50), ModifiedDate TIMESTAMP
 );
 
 CREATE TABLE stg.Customer (

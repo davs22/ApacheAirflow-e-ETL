@@ -39,6 +39,20 @@ Crie as pastas abaixo na raiz do projeto antes de iniciar os containers:
 
 O banco PostgreSQL usa o volume Docker `postgres-db-volume`; essa pasta nao precisa ser criada manualmente no projeto.
 
+## Conectar ao PostgreSQL pelo DBeaver
+
+O PostgreSQL escuta na porta `5432` dentro do Docker e e publicado no Windows pela porta `5433` (configuravel por `POSTGRES_HOST_PORT` no `.env`). No DBeaver, crie uma conexao PostgreSQL com estes dados:
+
+| Campo | Valor |
+|---|---|
+| Host | `localhost` |
+| Porta | `5433` |
+| Banco de dados | valor de `POSTGRES_DB` no `.env` (`airflow` por padrao) |
+| Usuario | valor de `POSTGRES_USER` no `.env` (`airflow` por padrao) |
+| Senha | valor de `POSTGRES_PASSWORD` no `.env` |
+
+Se alterar `POSTGRES_HOST_PORT`, use a nova porta no DBeaver. O nome de host `postgres` e a porta `5432` sao para conexoes entre containers; nao os use no DBeaver instalado no Windows. Certifique-se de que o servico esteja iniciado com `docker compose up -d`.
+
 ## Comandos uteis
 
 ```powershell

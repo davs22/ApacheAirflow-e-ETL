@@ -1,6 +1,4 @@
-DROP TABLE IF EXISTS dw_f_vendas CASCADE;
-
-CREATE TABLE dw_f_vendas (
+CREATE TABLE IF NOT EXISTS dw_f_vendas (
     sk_venda SERIAL PRIMARY KEY,
     
     -- Chaves Estrangeiras (Conexão com as Dimensões)
@@ -11,7 +9,7 @@ CREATE TABLE dw_f_vendas (
     
     -- Chaves de Negócio (Rastreabilidade OLTP)
     sales_order_id INT NOT NULL,
-    sales_order_detail_id INT NOT NULL,
+    sales_order_detail_id INT NOT NULL UNIQUE,
     
     -- Métricas / Fatos
     quantidade INT NOT NULL,

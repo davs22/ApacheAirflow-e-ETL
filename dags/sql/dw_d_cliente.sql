@@ -1,6 +1,4 @@
-DROP TABLE IF EXISTS dw_d_cliente CASCADE;
-
-CREATE TABLE dw_d_cliente (
+CREATE TABLE IF NOT EXISTS dw_d_cliente (
     sk_cliente SERIAL PRIMARY KEY,
     customer_id INT NOT NULL UNIQUE,
     nome_cliente VARCHAR(255),
