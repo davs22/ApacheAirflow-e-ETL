@@ -15,8 +15,6 @@ default_args = {
     'retry_delay': timedelta(minutes=1),
 }
 
-# Mapeamento das consultas diretamente nos schemas originais do SQL Server (AdventureWorks OLTP)
-# Utilizamos aliases em minúsculo (AS productcategoryid) para garantir compatibilidade perfeita com o PostgreSQL
 QUERIES_EXTRACAO = {
     'productcategory': """
         SELECT 
@@ -85,14 +83,11 @@ QUERIES_EXTRACAO = {
 }
 
 def extrair_sqlserver_para_postgres(table_name, sql_query, **kwargs):
-    # 1. Conecta na origem (SQL Server - AdventureWorks) usando a conexão do painel
     mssql_hook = MsSqlHook(mssql_conn_id='mssql_adventureworks')
     df = mssql_hook.get_pandas_df(sql=sql_query)
     
-    # Tratamento de tipos nulos do Pandas para não gerar conflito no PostgreSQL
     df = df.astype(object).where(pd.notnull(df), None)
     
-    # 2. Conecta no destino (PostgreSQL - Staging) usando a conexão do painel
     pg_hook = PostgresHook(postgres_conn_id='postgres_default')
     pg_engine = pg_hook.get_sqlalchemy_engine()
     
@@ -111,7 +106,6 @@ with DAG(
     tags=['adventureworks', 'mssql', 'postgres', 'extract', 'stg'],
 ) as dag:
 
-    # Cria as tarefas paralelamente para otimizar o tempo de extração
     for tabela, query in QUERIES_EXTRACAO.items():
         PythonOperator(
             task_id=f'extract_{tabela}',

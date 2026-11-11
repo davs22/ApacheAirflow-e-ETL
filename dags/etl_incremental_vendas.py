@@ -4,8 +4,6 @@ from datetime import datetime, timedelta
 
 default_args = {
     'owner': 'diirr',
-    # Cada execução pode rodar independentemente; uma execução anterior
-    # com falha não deve bloquear as próximas.
     'depends_on_past': False,
     'start_date': datetime(2026, 1, 1),
     'email_on_failure': False,

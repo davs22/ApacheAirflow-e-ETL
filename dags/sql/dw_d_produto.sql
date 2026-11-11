@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS dw_d_produto (
     sk_produto SERIAL PRIMARY KEY,
-    product_id INT NOT NULL UNIQUE, -- Chave de negócio (Natural Key)
+    product_id INT NOT NULL UNIQUE,
     nome_produto VARCHAR(255) NOT NULL,
     numero_produto VARCHAR(50),
     categoria VARCHAR(100) DEFAULT 'Sem Categoria',
