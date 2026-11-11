@@ -51,6 +51,84 @@ services:
     shm_size: 128mb
     restart: unless-stopped
 
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: aula-etl-sqlserver
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Password123!}"
+      MSSQL_PID: "Developer"
+    volumes:
+      - sqlserver-data-volume:/var/opt/mssql
+      - sqlserver-backup-volume:/var/opt/mssql/backup
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD:-Password123!}\" -Q \"SELECT 1\" || /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD:-Password123!}\" -Q \"SELECT 1\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    mem_limit: 2g
+    restart: unless-stopped
+
+  sqlserver-backup:
+    image: curlimages/curl:8.12.1
+    user: "0:0"
+    volumes:
+      - sqlserver-backup-volume:/backup
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ ! -s /backup/AdventureWorks2019.bak ]; then
+          echo "Baixando o backup AdventureWorks2019..."
+          curl --fail --location --retry 3 --output /backup/AdventureWorks2019.bak https://github.com/Microsoft/sql-server-samples/releases/download/adventureworks/AdventureWorks2019.bak
+        else
+          echo "Backup AdventureWorks2019 ja esta disponivel."
+        fi
+    restart: "no"
+
+  sqlserver-init:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    user: root
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      sqlserver-backup:
+        condition: service_completed_successfully
+    environment:
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Password123!}"
+    volumes:
+      - sqlserver-data-volume:/var/opt/mssql
+      - sqlserver-backup-volume:/var/opt/mssql/backup
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        set -e
+        if [ -x /opt/mssql-tools18/bin/sqlcmd ]; then
+          sqlcmd() { /opt/mssql-tools18/bin/sqlcmd -C -b "$$@"; }
+        elif [ -x /opt/mssql-tools/bin/sqlcmd ]; then
+          sqlcmd() { /opt/mssql-tools/bin/sqlcmd -b "$$@"; }
+        else
+          echo "sqlcmd nao encontrado na imagem SQL Server."
+          exit 1
+        fi
+        echo "Verificando se o banco AdventureWorks2019 ja existe no SQL Server..."
+        DB_EXISTS=$$(sqlcmd -S sqlserver -U sa -P "$$MSSQL_SA_PASSWORD" -h -1 -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.databases WHERE name = 'AdventureWorks2019'" | tr -d '[:space:]')
+        if [ "$$DB_EXISTS" != "1" ]; then
+          if [ ! -s /var/opt/mssql/backup/AdventureWorks2019.bak ]; then
+            echo "Backup AdventureWorks2019 ausente; o download nao foi concluido."
+            exit 1
+          fi
+          echo "Restaurando o banco AdventureWorks2019 no SQL Server..."
+          sqlcmd -S sqlserver -U sa -P "$$MSSQL_SA_PASSWORD" -Q "RESTORE DATABASE [AdventureWorks2019] FROM DISK = '/var/opt/mssql/backup/AdventureWorks2019.bak' WITH MOVE 'AdventureWorks2019' TO '/var/opt/mssql/data/AdventureWorks2019.mdf', MOVE 'AdventureWorks2019_log' TO '/var/opt/mssql/data/AdventureWorks2019_log.ldf', REPLACE"
+          echo "AdventureWorks2019 restaurado com sucesso!"
+        else
+          echo "Banco AdventureWorks2019 ja esta restaurado e pronto para uso!"
+        fi
+    restart: "no"
+
   airflow-init:
     <<: *airflow-common
     entrypoint: /bin/bash
@@ -117,3 +195,5 @@ services:
 
 volumes:
   postgres-db-volume:
+  sqlserver-data-volume:
+  sqlserver-backup-volume:
