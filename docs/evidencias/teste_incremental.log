@@ -1,0 +1,76 @@
+productcategory: lidos=4, novos/alterados=4, janela=None..2026-11-13 21:35:02.960000
+productsubcategory: lidos=37, novos/alterados=37, janela=None..2026-11-13 21:35:02.990000
+product: lidos=504, novos/alterados=504, janela=None..2026-11-13 21:35:03.023000
+salesterritory: lidos=10, novos/alterados=10, janela=None..2026-11-13 21:35:03.080000
+customer: lidos=19820, novos/alterados=19820, janela=None..2026-11-13 21:35:03.110000
+salesorderheader: lidos=31465, novos/alterados=31465, janela=None..2026-11-13 21:35:04.093000
+salesorderdetail: lidos=121317, novos/alterados=121317, janela=None..2026-11-13 21:35:05.500000
+[('Qualidade OK', 121317, Decimal('109846381.399888'))]
+{'teste': 'Bootstrap em banco vazio: 121317 itens', 'aprovado': True, 'detalhe': None}
+productcategory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:02.960000..2026-11-13 21:35:38.773000
+productsubcategory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:02.990000..2026-11-13 21:35:38.797000
+product: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:03.023000..2026-11-13 21:35:38.817000
+salesterritory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:03.080000..2026-11-13 21:35:38.837000
+customer: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:03.110000..2026-11-13 21:35:38.860000
+salesorderheader: lidos=1, novos/alterados=1, janela=2026-11-12 21:35:04.093000..2026-11-13 21:35:38.903000
+salesorderdetail: lidos=1, novos/alterados=1, janela=2026-11-12 21:35:05.500000..2026-11-13 21:35:38.930000
+[('Qualidade OK', 121318, Decimal('109850431.387888'))]
+{'teste': 'Inserção incremental de item novo', 'aprovado': True, 'detalhe': None}
+{'teste': 'Território ausente preserva venda', 'aprovado': True, 'detalhe': None}
+productcategory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:38.773000..2026-11-13 21:35:39.767000
+productsubcategory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:38.797000..2026-11-13 21:35:39.790000
+product: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:38.817000..2026-11-13 21:35:39.810000
+salesterritory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:38.837000..2026-11-13 21:35:39.830000
+customer: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:38.860000..2026-11-13 21:35:39.853000
+salesorderheader: lidos=1, novos/alterados=0, janela=2026-11-12 21:35:38.903000..2026-11-13 21:35:39.897000
+salesorderdetail: lidos=1, novos/alterados=1, janela=2026-11-12 21:35:38.930000..2026-11-13 21:35:39.920000
+[('Qualidade OK', 121318, Decimal('109852456.381888'))]
+{'teste': 'Atualização incremental preserva chave substituta', 'aprovado': True, 'detalhe': [121324, 3]}
+productcategory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:39.767000..2026-11-13 21:35:40.683000
+productsubcategory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:39.790000..2026-11-13 21:35:40.707000
+product: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:39.810000..2026-11-13 21:35:40.727000
+salesterritory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:39.830000..2026-11-13 21:35:40.747000
+customer: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:39.853000..2026-11-13 21:35:40.770000
+salesorderheader: lidos=1, novos/alterados=1, janela=2026-11-12 21:35:39.897000..2026-11-13 21:35:40.820000
+salesorderdetail: lidos=1, novos/alterados=0, janela=2026-11-12 21:35:39.920000..2026-11-13 21:35:40.843000
+[('Qualidade OK', 121318, Decimal('109852456.381888'))]
+{'teste': 'Mudança só no cabeçalho e expansão do calendário', 'aprovado': True, 'detalhe': None}
+productcategory: lidos=1, novos/alterados=1, janela=2026-11-12 21:35:40.683000..2026-11-13 21:35:41.930000
+productsubcategory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:40.707000..2026-11-13 21:35:41.960000
+product: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:40.727000..2026-11-13 21:35:41.983000
+salesterritory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:40.747000..2026-11-13 21:35:42.007000
+customer: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:40.770000..2026-11-13 21:35:42.027000
+salesorderheader: lidos=1, novos/alterados=0, janela=2026-11-12 21:35:40.820000..2026-11-13 21:35:42.073000
+salesorderdetail: lidos=1, novos/alterados=0, janela=2026-11-12 21:35:40.843000..2026-11-13 21:35:42.097000
+[('Qualidade OK', 121318, Decimal('109852456.381888'))]
+{'teste': 'Categoria alterada propaga para produtos sem alterar Product', 'aprovado': True, 'detalhe': None}
+{'teste': 'Falha não avança watermark nem altera staging', 'aprovado': True, 'detalhe': None}
+productcategory: lidos=1, novos/alterados=1, janela=2026-11-12 21:35:41.930000..2026-11-13 21:35:43.203000
+productsubcategory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:41.960000..2026-11-13 21:35:43.230000
+product: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:41.983000..2026-11-13 21:35:43.250000
+salesterritory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:42.007000..2026-11-13 21:35:43.270000
+customer: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:42.027000..2026-11-13 21:35:43.293000
+salesorderheader: lidos=1, novos/alterados=0, janela=2026-11-12 21:35:42.073000..2026-11-13 21:35:43.337000
+salesorderdetail: lidos=1, novos/alterados=0, janela=2026-11-12 21:35:42.097000..2026-11-13 21:35:43.360000
+[('Qualidade OK', 121318, Decimal('109852456.381888'))]
+{'teste': 'Retomada após falha recupera alteração', 'aprovado': True, 'detalhe': None}
+productcategory: lidos=1, novos/alterados=0, janela=2026-11-12 21:35:43.203000..2026-11-13 21:35:44.490000
+productsubcategory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:43.230000..2026-11-13 21:35:44.517000
+product: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:43.250000..2026-11-13 21:35:44.540000
+salesterritory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:43.270000..2026-11-13 21:35:44.563000
+customer: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:43.293000..2026-11-13 21:35:44.587000
+salesorderheader: lidos=1, novos/alterados=0, janela=2026-11-12 21:35:43.337000..2026-11-13 21:35:44.660000
+salesorderdetail: lidos=1, novos/alterados=0, janela=2026-11-12 21:35:43.360000..2026-11-13 21:35:44.687000
+[('Qualidade OK', 121318, Decimal('109852456.381888'))]
+{'teste': 'Repetição com janela sobreposta não duplica nem atualiza fatos', 'aprovado': True, 'detalhe': None}
+[(Decimal('0'),)]
+[(Decimal('0'),)]
+[(Decimal('0'),)]
+[(None,)]
+[(0,)]
+[(None,)]
+[(0,)]
+[]
+[]
+[]
+{'teste': 'Dez KPIs executam com fato vazio, sem divisão por zero', 'aprovado': True, 'detalhe': None}

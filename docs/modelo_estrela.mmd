@@ -1,0 +1,55 @@
+erDiagram
+    dw_d_produto ||--o{ dw_f_vendas : sk_produto
+    dw_d_cliente ||--o{ dw_f_vendas : sk_cliente
+    dw_d_territorio ||--o{ dw_f_vendas : sk_territorio
+    dw_d_calendario ||--o{ dw_f_vendas : sk_data_pedido
+    dw_f_vendas {
+        int sk_venda PK
+        int sales_order_detail_id UK "grão: item de pedido"
+        int sales_order_id
+        int sk_produto FK
+        int sk_cliente FK
+        int sk_territorio FK
+        int sk_data_pedido FK
+        int quantidade
+        numeric preco_unitario "19,4"
+        numeric desconto "19,4; proporção 0 a 1"
+        numeric custo_padrao "19,4; estimativa atual"
+        numeric valor_total "38,6"
+        timestamp data_modificacao
+        timestamp data_carga
+    }
+    dw_d_produto {
+        int sk_produto PK
+        int product_id UK
+        varchar nome_produto
+        varchar numero_produto
+        varchar categoria
+        varchar subcategoria
+        timestamp data_carga
+    }
+    dw_d_cliente {
+        int sk_cliente PK
+        int customer_id UK
+        varchar nome_cliente
+        varchar tipo_cliente
+        timestamp data_carga
+    }
+    dw_d_territorio {
+        int sk_territorio PK
+        int territory_id UK
+        varchar nome_territorio
+        varchar codigo_pais
+        varchar regiao
+        timestamp data_carga
+    }
+    dw_d_calendario {
+        int sk_data PK "YYYYMMDD"
+        date data_completa
+        int ano
+        int mes
+        varchar nome_mes
+        int trimestre
+        int dia
+        varchar nome_dia_semana
+    }

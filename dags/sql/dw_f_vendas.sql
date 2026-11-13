@@ -10,10 +10,10 @@ CREATE TABLE IF NOT EXISTS dw_f_vendas (
     sales_order_detail_id INT NOT NULL UNIQUE,
     
     quantidade INT NOT NULL,
-    preco_unitario NUMERIC(15,2) NOT NULL,
-    desconto NUMERIC(15,2) NOT NULL,
-    custo_padrao NUMERIC(15,2) NOT NULL,
-    valor_total NUMERIC(15,2) NOT NULL,
+    preco_unitario NUMERIC(19,4) NOT NULL,
+    desconto NUMERIC(19,4) NOT NULL,
+    custo_padrao NUMERIC(19,4) NOT NULL,
+    valor_total NUMERIC(38,6) NOT NULL,
     
     data_modificacao TIMESTAMP NOT NULL, 
     data_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

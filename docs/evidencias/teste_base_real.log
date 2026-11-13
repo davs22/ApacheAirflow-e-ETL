@@ -1,0 +1,43 @@
+productcategory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:09.247000..2026-11-13 21:37:15.510000
+productsubcategory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:09.550000..2026-11-13 21:37:15.530000
+product: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:09.650000..2026-11-13 21:37:15.550000
+salesterritory: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:09.757000..2026-11-13 21:37:15.573000
+customer: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:09.430000..2026-11-13 21:37:15.593000
+salesorderheader: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:09.337000..2026-11-13 21:37:15.640000
+salesorderdetail: lidos=0, novos/alterados=0, janela=2026-11-12 21:35:09.863000..2026-11-13 21:37:15.660000
+[('Qualidade OK', 121317, Decimal('109846381.399888'))]
+productcategory: lidos=0, novos/alterados=0, janela=2026-11-12 21:37:15.510000..2026-11-13 21:37:16.500000
+productsubcategory: lidos=0, novos/alterados=0, janela=2026-11-12 21:37:15.530000..2026-11-13 21:37:16.520000
+product: lidos=0, novos/alterados=0, janela=2026-11-12 21:37:15.550000..2026-11-13 21:37:16.540000
+salesterritory: lidos=0, novos/alterados=0, janela=2026-11-12 21:37:15.573000..2026-11-13 21:37:16.567000
+customer: lidos=0, novos/alterados=0, janela=2026-11-12 21:37:15.593000..2026-11-13 21:37:16.587000
+salesorderheader: lidos=0, novos/alterados=0, janela=2026-11-12 21:37:15.640000..2026-11-13 21:37:16.633000
+salesorderdetail: lidos=0, novos/alterados=0, janela=2026-11-12 21:37:15.660000..2026-11-13 21:37:16.657000
+[('Qualidade OK', 121317, Decimal('109846381.399888'))]
+[
+  {
+    "teste": "Carga histórica completa",
+    "aprovado": true,
+    "detalhe": 121317
+  },
+  {
+    "teste": "Receita exata SQL Server = PostgreSQL",
+    "aprovado": true,
+    "detalhe": "109846381.399888"
+  },
+  {
+    "teste": "Reexecução sem duplicação",
+    "aprovado": true,
+    "detalhe": null
+  },
+  {
+    "teste": "Reexecução sem UPDATE de fatos inalterados",
+    "aprovado": true,
+    "detalhe": null
+  },
+  {
+    "teste": "Extração sem mudanças não reprocessa histórico",
+    "aprovado": true,
+    "detalhe": null
+  }
+]
