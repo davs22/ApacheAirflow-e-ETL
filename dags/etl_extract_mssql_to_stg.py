@@ -1,4 +1,3 @@
-"""Extração manual de manutenção; o DAG principal já inclui esta etapa."""
 from datetime import datetime, timedelta
 from airflow.sdk import DAG
 from airflow.providers.standard.operators.python import PythonOperator

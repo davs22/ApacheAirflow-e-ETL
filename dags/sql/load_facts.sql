@@ -1,5 +1,3 @@
--- Grão: um item de pedido; preserva chave substituta no UPDATE.
--- Custo é o StandardCost atual da origem (estimativa, não custo histórico contábil).
 WITH incoming (sales_order_detail_id, sk_produto, sk_cliente, sk_territorio, sk_data_pedido, sales_order_id, quantidade, preco_unitario, desconto, custo_padrao, valor_total, data_modificacao) AS (
 SELECT sod.salesorderdetailid,dp.sk_produto,dc.sk_cliente,dt.sk_territorio,
 TO_CHAR(soh.orderdate,'YYYYMMDD')::INT,soh.salesorderid,sod.orderqty,sod.unitprice,

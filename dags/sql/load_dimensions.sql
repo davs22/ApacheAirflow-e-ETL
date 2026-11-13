@@ -1,5 +1,3 @@
--- Dimensões SCD tipo 1. Comparação de conteúdo evita atualizações sem mudança.
--- Reavaliação dos joins propaga mudanças de categoria/subcategoria sem mudar Product.ModifiedDate.
 WITH incoming (product_id, nome_produto, numero_produto, categoria, subcategoria) AS (
 SELECT p.productid,p.name,p.productnumber,COALESCE(c.name,'Sem Categoria'),COALESCE(s.name,'Sem Subcategoria')
 FROM stg.product p LEFT JOIN stg.productsubcategory s USING(productsubcategoryid)

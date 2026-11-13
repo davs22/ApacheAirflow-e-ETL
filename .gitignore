@@ -5,8 +5,4 @@ __pycache__/
 *.pyc
 .DS_Store
 tmp/
-data/backup/
-data/evidence.json
-data/validation_results.json
-data/isolated_results.json
 .pytest_cache/

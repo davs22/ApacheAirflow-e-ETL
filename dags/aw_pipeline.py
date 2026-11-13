@@ -1,4 +1,3 @@
-"""Funções compartilhadas; nenhuma conexão durante o parsing dos DAGs."""
 from datetime import timedelta
 from contextlib import closing
 from pathlib import Path
@@ -33,11 +32,6 @@ def run_sql(filename):
 
 
 def extract_table(table_name, **context):
-    """Watermark, staging e log são confirmados atomicamente.
-
-    Sobreposição de 1 dia cobre empates e pequenas transações concorrentes.
-    Contrato: a origem atualiza ModifiedDate quando altera um registro.
-    """
     key, query = SOURCES[table_name]
     pg = PostgresHook(postgres_conn_id='postgres_default').get_conn()
     source = MsSqlHook(mssql_conn_id='mssql_adventureworks').get_conn()

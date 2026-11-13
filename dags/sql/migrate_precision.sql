@@ -1,4 +1,3 @@
--- Migração aditiva: não remove dados existentes. A próxima extração recupera a precisão original.
 ALTER TABLE stg.product ALTER COLUMN standardcost TYPE NUMERIC(19,4);
 ALTER TABLE stg.salesorderdetail ALTER COLUMN unitprice TYPE NUMERIC(19,4),
     ALTER COLUMN unitpricediscount TYPE NUMERIC(19,4), ALTER COLUMN linetotal TYPE NUMERIC(38,6);
