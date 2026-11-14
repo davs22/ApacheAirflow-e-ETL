@@ -176,6 +176,13 @@ O arquivo [`kpis_adventureworks.sql`](dags/sql/kpis_adventureworks.sql) contém 
 
 > A receita considera o total dos itens após descontos, sem frete e impostos. O custo usa o `StandardCost` atual do produto, portanto lucro e margem são estimativas, sem reconstrução do custo histórico contábil. Os resultados são impressos nos logs da tarefa; as consultas não criam tabelas de indicadores.
 
+Use `AIRFLOW_LOGGING_LEVEL=INFO` no `.env` para registrar os resultados. Após
+alterar essa configuração, execute `docker compose up -d` para aplicá-la e
+dispare uma nova execução. Nos logs de `calculate_10_kpis`, cada consulta mostra
+suas colunas, quantidade de linhas e todos os resultados, incluindo os grupos e
+o top 10. Execuções antigas feitas em `WARNING` não recuperam mensagens que não
+foram gravadas.
+
 ## Operação e acompanhamento
 
 Para verificar erros de importação e acompanhar os serviços:
@@ -198,10 +205,14 @@ Esse comando **executa as tarefas e grava nos bancos configurados**. Utilize-o c
 Os três DAGs abaixo possuem execução manual, sem agendamento:
 
 - **`etl_build_schema_stg_adventureworks`** — cria as estruturas de staging e controle ETL.
-- **`etl_build_schema_dw_adventureworks`** — cria as dimensões e a fato do modelo estrela.
+- **`etl_build_schema_dw_adventureworks`** — cria as dimensões e a fato do modelo estrela, mesmo antes de existir a staging. O calendário é preenchido por `load_dimensions` no DAG principal, após a extração dos pedidos.
 - **`etl_extract_mssql_adventureworks`** — prepara a staging e executa as sete extrações.
 
 Evite executá-los em paralelo com o DAG principal durante manutenções.
+
+Ativar um DAG auxiliar não dispara o pipeline completo: eles não têm agendamento
+e criam estruturas ou extraem dados apenas quando acionados manualmente. Para a
+carga completa e a execução diária, ative `etl_incremental_adventureworks`.
 
 ### Conexão pelo DBeaver ou outro cliente SQL
 

@@ -19,7 +19,7 @@ x-airflow-common: &airflow-common
     AIRFLOW_CONN_MSSQL_ADVENTUREWORKS: '{"conn_type":"mssql","host":"sqlserver","port":1433,"schema":"AdventureWorks2019","login":"sa","password":"${MSSQL_SA_PASSWORD:-Password123!}"}'
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
-    AIRFLOW__LOGGING__LOGGING_LEVEL: "${AIRFLOW_LOGGING_LEVEL:-WARNING}"
+    AIRFLOW__LOGGING__LOGGING_LEVEL: "${AIRFLOW_LOGGING_LEVEL:-INFO}"
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-apache-airflow-providers-postgres apache-airflow-providers-microsoft-mssql apache-airflow-providers-standard pandas}
   volumes:
     - ./dags:/opt/airflow/dags

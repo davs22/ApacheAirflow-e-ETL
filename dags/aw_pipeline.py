@@ -1,11 +1,14 @@
 from datetime import timedelta
 from contextlib import closing
 from pathlib import Path
+import json
+import logging
 from airflow.providers.microsoft.mssql.hooks.mssql import MsSqlHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import sqlparse
 
 SQL_DIR = Path(__file__).parent / 'sql'
+logger = logging.getLogger(__name__)
 SOURCES = {
     'productcategory': ('productcategoryid', 'SELECT ProductCategoryID productcategoryid, Name name, ModifiedDate modifieddate FROM Production.ProductCategory'),
     'productsubcategory': ('productsubcategoryid', 'SELECT ProductSubcategoryID productsubcategoryid, ProductCategoryID productcategoryid, Name name, ModifiedDate modifieddate FROM Production.ProductSubcategory'),
@@ -25,10 +28,18 @@ SOURCES = {
 def run_sql(filename):
     with closing(PostgresHook(postgres_conn_id='postgres_default').get_conn()) as conn:
         with conn, conn.cursor() as cur:
+            result_number = 0
             for statement in sqlparse.split((SQL_DIR / filename).read_text(encoding='utf-8')):
                 cur.execute(statement)
                 if cur.description:
-                    print(cur.fetchall())
+                    result_number += 1
+                    columns = [column[0] for column in cur.description]
+                    rows = cur.fetchall()
+                    logger.info('Consulta %s de %s | colunas: %s | linhas: %s',
+                                result_number, filename, ', '.join(columns), len(rows))
+                    for row in rows:
+                        logger.info('Resultado consulta %s: %s', result_number,
+                                    json.dumps(dict(zip(columns, row)), ensure_ascii=False, default=str))
 
 
 def extract_table(table_name, **context):
@@ -73,7 +84,8 @@ def extract_table(table_name, **context):
                     ON CONFLICT(tabela) DO UPDATE SET watermark=EXCLUDED.watermark''', (table_name, upper))
                 target.execute('''INSERT INTO etl.extraction_log(run_id,tabela,limite_inferior,limite_superior,lidos,alterados)
                     VALUES(%s,%s,%s,%s,%s,%s)''', (context.get('run_id', 'execucao-direta'), table_name, lower, upper, read_count, changed))
-                print(f'{table_name}: lidos={read_count}, novos/alterados={changed}, janela={lower}..{upper}')
+                logger.info('%s: lidos=%s, novos/alterados=%s, janela=%s..%s',
+                            table_name, read_count, changed, lower, upper)
     finally:
         source.close()
         pg.close()
