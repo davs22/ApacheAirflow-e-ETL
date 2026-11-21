@@ -4,7 +4,7 @@
 
 ### Do banco transacional à análise de vendas
 
-Pipeline ETL com extração incremental, Data Warehouse dimensional e orquestração com Apache Airflow.
+Pipeline de vendas do AdventureWorks2019: SQL Server → staging no PostgreSQL → modelo estrela → 10 indicadores de negócio, com orquestração pelo Apache Airflow.
 
 ![Apache Airflow](https://img.shields.io/badge/Apache_Airflow-3.3.1-017CEE?style=flat-square&logo=apacheairflow&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)
@@ -12,7 +12,7 @@ Pipeline ETL com extração incremental, Data Warehouse dimensional e orquestra�
 ![Python](https://img.shields.io/badge/Python-DAGs_e_ETL-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)
 
-[Visão geral](#visão-geral) · [Arquitetura](#arquitetura) · [Como executar](#como-executar) · [Indicadores](#indicadores-de-negócio) · [Galeria](#galeria)
+[Visão geral](#visão-geral) · [Arquitetura](#arquitetura) · [Modelo dimensional](#modelo-dimensional) · [Como executar](#como-executar) · [Validar a carga](#validar-a-carga) · [Indicadores](#indicadores-de-negócio) · [Operação](#operação-e-acompanhamento) · [Galeria](#galeria)
 
 </div>
 
@@ -22,7 +22,7 @@ Pipeline ETL com extração incremental, Data Warehouse dimensional e orquestra�
 
 Este projeto transforma dados de vendas do **AdventureWorks2019**, no SQL Server, em um **Data Warehouse no PostgreSQL**. O Apache Airflow coordena a criação das estruturas, a extração incremental, as cargas dimensionais e o cálculo de dez indicadores de negócio.
 
-A proposta reúne, em um ambiente Docker Compose, as principais etapas de um fluxo de engenharia de dados: integração entre bancos, staging, modelagem estrela, controle de processamento e consultas analíticas.
+A proposta reúne, em um ambiente local com Docker Compose, integração entre bancos, staging, modelagem estrela, controle de processamento e consultas analíticas. Ao concluir uma execução, você terá sete tabelas de origem na staging, quatro dimensões, uma fato de vendas e os resultados dos indicadores nos logs do Airflow.
 
 - **Carga incremental:** seleção por `ModifiedDate`, com watermark independente para cada tabela.
 - **Reprocessamento idempotente:** upserts e comparação de conteúdo evitam duplicação e atualizações desnecessárias.
@@ -90,7 +90,9 @@ O grão de **`dw_f_vendas`** é **um item de pedido**, identificado de forma ún
 - **`dw_d_territorio`** — território, país e região; inclui um membro para território não informado.
 - **`dw_d_calendario`** — datas entre o menor e o maior pedido disponível na staging, com atributos de ano, mês, trimestre e dia.
 
-![Diagrama do modelo estrela](data/diagrama/Star%20Schema.png)
+![Diagrama do modelo estrela](data/diagrama/Modelo%20estrela%20de%20vendas.png)
+
+O [arquivo editável do diagrama](data/diagrama/Modelo%20estrela%20de%20vendas.drawio) também está disponível no repositório.
 
 Os campos monetários usam `NUMERIC(19,4)`, e os totais de linha usam `NUMERIC(38,6)`. O arquivo [`migrate_precision.sql`](dags/sql/migrate_precision.sql) ajusta essas precisões em estruturas existentes e cria índices nas chaves dimensionais da fato.
 
@@ -115,27 +117,19 @@ cd ApacheAirflow-e-ETL
 
 ### 2. Configure o ambiente
 
-Crie o arquivo local de configuração, preservando um `.env` existente:
+Gere o arquivo local de configuração com senhas e chaves aleatórias exclusivas:
 
 ```powershell
-if (!(Test-Path .env)) { Copy-Item .env.example .env }
+powershell -ExecutionPolicy Bypass -File scripts/configurar_ambiente.ps1
 ```
 
-Edite o `.env` e configure:
+O script cria o `.env` somente quando ele não existe. As senhas dos bancos, a senha inicial do Airflow e as chaves de segurança ficam nesse arquivo local e não são exibidas pelo script. O `.env.example` contém apenas os nomes das variáveis e configurações sem segredos.
 
-- `AIRFLOW_FERNET_KEY`: chave Fernet válida para o Airflow.
-- `AIRFLOW_API_SECRET_KEY` e `AIRFLOW_JWT_SECRET`: segredos aleatórios distintos.
-- `POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_DB`: acesso ao PostgreSQL.
-- `_AIRFLOW_WWW_USER_USERNAME` e `_AIRFLOW_WWW_USER_PASSWORD`: acesso à interface do Airflow.
-- `MSSQL_SA_PASSWORD`: senha do usuário `sa`, atendendo à política de complexidade do SQL Server.
+As conexões `postgres_default` e `mssql_adventureworks` utilizam as variáveis obrigatórias do `.env`. O Compose interrompe a inicialização quando alguma credencial obrigatória está vazia. O usuário inicial da interface é definido por `_AIRFLOW_WWW_USER_USERNAME`; sua senha fica em `_AIRFLOW_WWW_USER_PASSWORD`.
 
-Para gerar as três chaves usando a própria imagem do Airflow:
+Para uma instalação nova, cada avaliador deve gerar seu próprio `.env`. Não envie esse arquivo junto ao projeto. As portas publicadas ficam vinculadas a `127.0.0.1`, permitindo acesso somente no computador que executa os containers.
 
-```powershell
-docker run --rm --entrypoint python apache/airflow:3.3.1 -c "from cryptography.fernet import Fernet; import secrets; print('AIRFLOW_FERNET_KEY=' + Fernet.generate_key().decode()); print('AIRFLOW_API_SECRET_KEY=' + secrets.token_hex(32)); print('AIRFLOW_JWT_SECRET=' + secrets.token_hex(32))"
-```
-
-Copie cada valor gerado para a variável correspondente no `.env`. Esse arquivo já está no `.gitignore`; mantenha as credenciais fora do controle de versão.
+Em ambientes com volumes existentes, alterar o `.env` não troca automaticamente as senhas já gravadas nos bancos ou no usuário do Airflow. A rotação deve atualizar os serviços e o arquivo local de forma coordenada. Uma chave Fernet existente exige migração dos valores criptografados antes de ser substituída. Preserve os volumes para manter os dados.
 
 ### 3. Inicie os serviços
 
@@ -159,6 +153,39 @@ Abra **[localhost:8080](http://localhost:8080)** e entre com as credenciais defi
 
 As conexões **`postgres_default`** e **`mssql_adventureworks`** já são configuradas pelo Compose. O DAG principal cria as próprias estruturas; os DAGs auxiliares são opcionais.
 
+## Validar a carga
+
+Uma execução completa deve terminar com as **12 tarefas em sucesso**, incluindo `calculate_10_kpis`. No PostgreSQL, execute as consultas abaixo pelo DBeaver ou outro cliente SQL conectado ao banco definido em `POSTGRES_DB`.
+
+Confira a quantidade de registros em cada tabela do DW:
+
+```sql
+SELECT 'dw_d_produto' AS tabela, COUNT(*) AS registros FROM dw_d_produto
+UNION ALL
+SELECT 'dw_d_cliente', COUNT(*) FROM dw_d_cliente
+UNION ALL
+SELECT 'dw_d_territorio', COUNT(*) FROM dw_d_territorio
+UNION ALL
+SELECT 'dw_d_calendario', COUNT(*) FROM dw_d_calendario
+UNION ALL
+SELECT 'dw_f_vendas', COUNT(*) FROM dw_f_vendas;
+```
+
+Verifique os watermarks e o histórico recente de extração:
+
+```sql
+SELECT tabela, watermark
+FROM etl.watermark
+ORDER BY tabela;
+
+SELECT run_id, tabela, limite_inferior, limite_superior, lidos, alterados
+FROM etl.extraction_log
+ORDER BY id DESC
+LIMIT 21;
+```
+
+Após a primeira carga completa, devem existir **sete watermarks**, um por tabela de origem. Em uma nova execução sem alterações na origem, `lidos` pode continuar maior que zero por causa da sobreposição de um dia, enquanto `alterados` deve ser zero. A quantidade de itens na fato deve permanecer estável.
+
 ## Indicadores de negócio
 
 O arquivo [`kpis_adventureworks.sql`](dags/sql/kpis_adventureworks.sql) contém dez consultas executadas ao final do pipeline:
@@ -176,12 +203,7 @@ O arquivo [`kpis_adventureworks.sql`](dags/sql/kpis_adventureworks.sql) contém 
 
 > A receita considera o total dos itens após descontos, sem frete e impostos. O custo usa o `StandardCost` atual do produto, portanto lucro e margem são estimativas, sem reconstrução do custo histórico contábil. Os resultados são impressos nos logs da tarefa; as consultas não criam tabelas de indicadores.
 
-Use `AIRFLOW_LOGGING_LEVEL=INFO` no `.env` para registrar os resultados. Após
-alterar essa configuração, execute `docker compose up -d` para aplicá-la e
-dispare uma nova execução. Nos logs de `calculate_10_kpis`, cada consulta mostra
-suas colunas, quantidade de linhas e todos os resultados, incluindo os grupos e
-o top 10. Execuções antigas feitas em `WARNING` não recuperam mensagens que não
-foram gravadas.
+Com `AIRFLOW_LOGGING_LEVEL=INFO`, os logs de `calculate_10_kpis` mostram as colunas, a quantidade de linhas e os resultados de cada consulta, incluindo os agrupamentos e o top 10. Também é possível executar o arquivo SQL diretamente no PostgreSQL.
 
 ## Operação e acompanhamento
 
@@ -210,9 +232,7 @@ Os três DAGs abaixo possuem execução manual, sem agendamento:
 
 Evite executá-los em paralelo com o DAG principal durante manutenções.
 
-Ativar um DAG auxiliar não dispara o pipeline completo: eles não têm agendamento
-e criam estruturas ou extraem dados apenas quando acionados manualmente. Para a
-carga completa e a execução diária, ative `etl_incremental_adventureworks`.
+Para a carga completa e a execução diária, ative `etl_incremental_adventureworks`. Os DAGs auxiliares só executam suas respectivas etapas quando acionados manualmente.
 
 ### Conexão pelo DBeaver ou outro cliente SQL
 
@@ -238,7 +258,13 @@ Se houver falha na inicialização, consulte os logs dos serviços de preparaç�
 docker compose logs sqlserver-backup sqlserver-init airflow-init
 ```
 
-Mantenha os provedores `apache-airflow-providers-postgres`, `apache-airflow-providers-microsoft-mssql` e `apache-airflow-providers-standard` ao personalizar `_PIP_ADDITIONAL_REQUIREMENTS`. O módulo compartilhado também utiliza `sqlparse`, disponível na imagem do Airflow. Em caso de pressão de memória, ajuste `AIRFLOW_PARALLELISM` e `AIRFLOW_MAX_ACTIVE_TASKS_PER_DAG`.
+### Problemas frequentes
+
+- **DAG ausente ou erro de importação:** execute `airflow dags list-import-errors` pelo comando acima e confira `_PIP_ADDITIONAL_REQUIREMENTS`. A extração exige `apache-airflow-providers-microsoft-mssql`; o módulo compartilhado também utiliza `sqlparse`, disponível na imagem do Airflow.
+- **SQL Server indisponível:** confira os logs de `sqlserver` e `sqlserver-init`, a senha `MSSQL_SA_PASSWORD` e a conclusão da restauração do backup.
+- **Calendário vazio após criar o schema:** execute o DAG principal. O preenchimento depende dos pedidos na staging e acontece em `load_dimensions`.
+- **Indicadores ausentes nos logs:** defina `AIRFLOW_LOGGING_LEVEL=INFO`, aplique com `docker compose up -d` e dispare uma nova execução. Mensagens omitidas em execuções anteriores com nível `WARNING` não são recuperadas.
+- **Pressão de memória:** reduza `AIRFLOW_PARALLELISM` e `AIRFLOW_MAX_ACTIVE_TASKS_PER_DAG` e aplique a configuração com `docker compose up -d`.
 
 ## Estrutura do projeto
 
@@ -312,3 +338,17 @@ Registros visuais disponíveis no repositório.
 [Acessar o repositório](https://github.com/davs22/ApacheAirflow-e-ETL)
 
 </div>
+
+## Entrega do projeto
+
+Para gerar o ZIP da avaliação:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/gerar_entrega.ps1
+```
+
+O arquivo `output/entrega/ApacheAirflow-e-ETL.zip` contém o código, os scripts SQL, as imagens, o diagrama, a documentação e o `.env.example`. O empacotamento usa uma lista explícita de arquivos e exclui `.env`, histórico Git, logs de execução, caches, backups e outros arquivos de saída. Antes de gerar o pacote, verifica se algum arquivo selecionado contém os valores secretos do `.env` local.
+
+O avaliador deve extrair o ZIP, entrar na pasta do projeto, executar `scripts/configurar_ambiente.ps1` e iniciar os serviços com `docker compose up -d`. O ZIP não depende das credenciais do autor.
+
+O repositório público deve receber somente arquivos sem segredos. Senhas anteriormente publicadas precisam ser trocadas nos serviços; removê-las da versão atual não elimina cópias do histórico Git nem ZIPs antigos.

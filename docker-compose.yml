@@ -10,13 +10,13 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: "${AIRFLOW_MAX_ACTIVE_TASKS_PER_DAG:-2}"
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-apiserver:8080/execution/
     AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
-    AIRFLOW__API__SECRET_KEY: ${AIRFLOW_API_SECRET_KEY}
-    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET}
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:?Defina POSTGRES_USER no .env}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}@postgres:5432/${POSTGRES_DB:?Defina POSTGRES_DB no .env}
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:?Defina AIRFLOW_FERNET_KEY no .env}
+    AIRFLOW__API__SECRET_KEY: ${AIRFLOW_API_SECRET_KEY:?Defina AIRFLOW_API_SECRET_KEY no .env}
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:?Defina AIRFLOW_JWT_SECRET no .env}
     AIRFLOW__CORE__LOAD_EXAMPLES: "${AIRFLOW_LOAD_EXAMPLES:-false}"
-    AIRFLOW_CONN_POSTGRES_DEFAULT: '{"conn_type":"postgres","host":"postgres","port":5432,"schema":"${POSTGRES_DB}","login":"${POSTGRES_USER}","password":"${POSTGRES_PASSWORD}"}'
-    AIRFLOW_CONN_MSSQL_ADVENTUREWORKS: '{"conn_type":"mssql","host":"sqlserver","port":1433,"schema":"AdventureWorks2019","login":"sa","password":"${MSSQL_SA_PASSWORD:-Password123!}"}'
+    AIRFLOW_CONN_POSTGRES_DEFAULT: '{"conn_type":"postgres","host":"postgres","port":5432,"schema":"${POSTGRES_DB:?Defina POSTGRES_DB no .env}","login":"${POSTGRES_USER:?Defina POSTGRES_USER no .env}","password":"${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}"}'
+    AIRFLOW_CONN_MSSQL_ADVENTUREWORKS: '{"conn_type":"mssql","host":"sqlserver","port":1433,"schema":"AdventureWorks2019","login":"sa","password":"${MSSQL_SA_PASSWORD:?Defina MSSQL_SA_PASSWORD no .env}"}'
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
     AIRFLOW__LOGGING__LOGGING_LEVEL: "${AIRFLOW_LOGGING_LEVEL:-INFO}"
@@ -37,15 +37,15 @@ services:
   postgres:
     image: postgres:16-alpine
     ports:
-      - "${POSTGRES_HOST_PORT:-5433}:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?Defina POSTGRES_USER no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:?Defina POSTGRES_DB no .env}
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:?Defina POSTGRES_USER no .env} -d ${POSTGRES_DB:?Defina POSTGRES_DB no .env}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -57,16 +57,17 @@ services:
     image: mcr.microsoft.com/mssql/server:2019-latest
     container_name: aula-etl-sqlserver
     ports:
-      - "1433:1433"
+      - "127.0.0.1:${MSSQL_HOST_PORT:-1433}:1433"
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Password123!}"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:?Defina MSSQL_SA_PASSWORD no .env}"
+      SQLCMDPASSWORD: "${MSSQL_SA_PASSWORD:?Defina MSSQL_SA_PASSWORD no .env}"
       MSSQL_PID: "Developer"
     volumes:
       - sqlserver-data-volume:/var/opt/mssql
       - sqlserver-backup-volume:/var/opt/mssql/backup
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD:-Password123!}\" -Q \"SELECT 1\" || /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD:-Password123!}\" -Q \"SELECT 1\""]
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -Q \"SELECT 1\" || /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -Q \"SELECT 1\""]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -99,7 +100,8 @@ services:
       sqlserver-backup:
         condition: service_completed_successfully
     environment:
-      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Password123!}"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:?Defina MSSQL_SA_PASSWORD no .env}"
+      SQLCMDPASSWORD: "${MSSQL_SA_PASSWORD:?Defina MSSQL_SA_PASSWORD no .env}"
     volumes:
       - sqlserver-data-volume:/var/opt/mssql
       - sqlserver-backup-volume:/var/opt/mssql/backup
@@ -117,14 +119,14 @@ services:
           exit 1
         fi
         echo "Verificando se o banco AdventureWorks2019 ja existe no SQL Server..."
-        DB_EXISTS=$$(sqlcmd -S sqlserver -U sa -P "$$MSSQL_SA_PASSWORD" -h -1 -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.databases WHERE name = 'AdventureWorks2019'" | tr -d '[:space:]')
+        DB_EXISTS=$$(sqlcmd -S sqlserver -U sa -h -1 -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.databases WHERE name = 'AdventureWorks2019'" | tr -d '[:space:]')
         if [ "$$DB_EXISTS" != "1" ]; then
           if [ ! -s /var/opt/mssql/backup/AdventureWorks2019.bak ]; then
             echo "Backup AdventureWorks2019 ausente; o download nao foi concluido."
             exit 1
           fi
           echo "Restaurando o banco AdventureWorks2019 no SQL Server..."
-          sqlcmd -S sqlserver -U sa -P "$$MSSQL_SA_PASSWORD" -Q "RESTORE DATABASE [AdventureWorks2019] FROM DISK = '/var/opt/mssql/backup/AdventureWorks2019.bak' WITH MOVE 'AdventureWorks2019' TO '/var/opt/mssql/data/AdventureWorks2019.mdf', MOVE 'AdventureWorks2019_log' TO '/var/opt/mssql/data/AdventureWorks2019_log.ldf', REPLACE"
+          sqlcmd -S sqlserver -U sa -Q "RESTORE DATABASE [AdventureWorks2019] FROM DISK = '/var/opt/mssql/backup/AdventureWorks2019.bak' WITH MOVE 'AdventureWorks2019' TO '/var/opt/mssql/data/AdventureWorks2019.mdf', MOVE 'AdventureWorks2019_log' TO '/var/opt/mssql/data/AdventureWorks2019_log.ldf', REPLACE"
           echo "AdventureWorks2019 restaurado com sucesso!"
         else
           echo "Banco AdventureWorks2019 ja esta restaurado e pronto para uso!"
@@ -140,8 +142,8 @@ services:
         set -e
         airflow db migrate
         airflow users create \
-          --username "${_AIRFLOW_WWW_USER_USERNAME}" \
-          --password "${_AIRFLOW_WWW_USER_PASSWORD}" \
+          --username "${_AIRFLOW_WWW_USER_USERNAME:?Defina _AIRFLOW_WWW_USER_USERNAME no .env}" \
+          --password "${_AIRFLOW_WWW_USER_PASSWORD:?Defina _AIRFLOW_WWW_USER_PASSWORD no .env}" \
           --firstname Admin \
           --lastname User \
           --role Admin \
@@ -153,7 +155,7 @@ services:
     <<: *airflow-common
     command: api-server
     ports:
-      - "${AIRFLOW_PORT:-8080}:8080"
+      - "127.0.0.1:${AIRFLOW_PORT:-8080}:8080"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
       interval: 30s
