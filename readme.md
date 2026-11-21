@@ -12,7 +12,7 @@ Pipeline de vendas do AdventureWorks2019: SQL Server → staging no PostgreSQL �
 ![Python](https://img.shields.io/badge/Python-DAGs_e_ETL-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)
 
-[Visão geral](#visão-geral) · [Arquitetura](#arquitetura) · [Modelo dimensional](#modelo-dimensional) · [Como executar](#como-executar) · [Validar a carga](#validar-a-carga) · [Indicadores](#indicadores-de-negócio) · [Operação](#operação-e-acompanhamento) · [Galeria](#galeria)
+[Visão geral](#visão-geral) · [Arquitetura](#arquitetura) · [Modelo dimensional](#modelo-dimensional) · [Segurança](#segurança-e-credenciais) · [Como executar](#como-executar) · [Validar a carga](#validar-a-carga) · [Indicadores](#indicadores-de-negócio) · [Operação](#operação-e-acompanhamento) · [Entrega](#entrega-do-projeto) · [Galeria](#galeria)
 
 </div>
 
@@ -29,6 +29,8 @@ A proposta reúne, em um ambiente local com Docker Compose, integração entre b
 - **Modelo dimensional:** uma fato de vendas conectada às dimensões produto, cliente, território e calendário.
 - **Rastreabilidade:** registro da janela de extração e das quantidades de registros lidos e alterados.
 - **Ambiente automatizado:** download e restauração do AdventureWorks e inicialização do Airflow pelo Compose.
+- **Credenciais por instalação:** senhas e chaves aleatórias geradas localmente, sem valores secretos no repositório.
+- **Entrega reproduzível:** ZIP gerado por uma seleção explícita de arquivos, sem credenciais, logs ou histórico Git.
 
 ## Arquitetura
 
@@ -96,12 +98,27 @@ O [arquivo editável do diagrama](data/diagrama/Modelo%20estrela%20de%20vendas.d
 
 Os campos monetários usam `NUMERIC(19,4)`, e os totais de linha usam `NUMERIC(38,6)`. O arquivo [`migrate_precision.sql`](dags/sql/migrate_precision.sql) ajusta essas precisões em estruturas existentes e cria índices nas chaves dimensionais da fato.
 
+## Segurança e credenciais
+
+O projeto é destinado à execução local para desenvolvimento e avaliação. As credenciais ficam no arquivo `.env` de cada instalação; esse arquivo é ignorado pelo Git e excluído do ZIP de entrega. O `.env.example` mantém os nomes das variáveis e as configurações públicas, com os valores secretos vazios.
+
+O script [`configurar_ambiente.ps1`](scripts/configurar_ambiente.ps1) utiliza um gerador criptográfico para criar senhas independentes para PostgreSQL, SQL Server e o administrador do Airflow, além das chaves Fernet, API e JWT. Ele não exibe os valores e não sobrescreve um `.env` existente. Para consultar suas credenciais, abra o `.env` local em um editor; não compartilhe esse arquivo nem capturas do seu conteúdo.
+
+O `docker-compose.yml` exige o preenchimento das credenciais obrigatórias e não fornece senhas padrão. Os serviços publicam suas portas em `127.0.0.1`, restringindo o acesso direto ao computador que executa os containers. As DAGs utilizam os identificadores `postgres_default` e `mssql_adventureworks`; as conexões são fornecidas por variáveis de ambiente.
+
+### Alteração de credenciais em uma instalação existente
+
+Com volumes já inicializados, editar o `.env` não altera automaticamente as senhas armazenadas nos bancos nem a senha do usuário do Airflow. A troca precisa atualizar os serviços e o arquivo local de forma coordenada. A substituição da chave Fernet exige a migração dos valores já criptografados. Preserve o `.env` e os volumes ao retomar uma instalação existente.
+
+Senhas expostas devem ser substituídas nos respectivos serviços. Excluir um valor do arquivo atual não o remove do histórico Git nem de pacotes distribuídos anteriormente. Os scripts de configuração e entrega não reescrevem o histórico do repositório.
+
 ## Como executar
 
 ### Pré-requisitos
 
 - Docker com suporte a containers Linux e Docker Compose v2.
-- Git para clonar o repositório.
+- PowerShell 5.1 ou superior para os scripts de configuração e entrega.
+- Git, caso obtenha o projeto por clonagem; não é necessário para usar o ZIP.
 - Acesso à internet no primeiro início para baixar imagens, dependências Python e o backup do AdventureWorks.
 - Memória disponível para os serviços: os limites configurados no Compose somam aproximadamente **7 GB**, além do consumo do Docker e do sistema operacional.
 - Portas `8080`, `5433` e `1433` livres na configuração padrão.
@@ -115,6 +132,8 @@ git clone https://github.com/davs22/ApacheAirflow-e-ETL.git
 cd ApacheAirflow-e-ETL
 ```
 
+Se recebeu o ZIP da avaliação, extraia-o e abra o PowerShell dentro da pasta `ApacheAirflow-e-ETL`, onde estão `docker-compose.yml` e `readme.md`. Nesse caso, não execute `git clone`.
+
 ### 2. Configure o ambiente
 
 Gere o arquivo local de configuração com senhas e chaves aleatórias exclusivas:
@@ -123,13 +142,15 @@ Gere o arquivo local de configuração com senhas e chaves aleatórias exclusiva
 powershell -ExecutionPolicy Bypass -File scripts/configurar_ambiente.ps1
 ```
 
-O script cria o `.env` somente quando ele não existe. As senhas dos bancos, a senha inicial do Airflow e as chaves de segurança ficam nesse arquivo local e não são exibidas pelo script. O `.env.example` contém apenas os nomes das variáveis e configurações sem segredos.
+O script cria o `.env` com as variáveis do `.env.example` e credenciais exclusivas. Se o arquivo já existir, ele será preservado. Para uma instalação nova, cada avaliador deve executar esse passo no próprio computador.
 
-As conexões `postgres_default` e `mssql_adventureworks` utilizam as variáveis obrigatórias do `.env`. O Compose interrompe a inicialização quando alguma credencial obrigatória está vazia. O usuário inicial da interface é definido por `_AIRFLOW_WWW_USER_USERNAME`; sua senha fica em `_AIRFLOW_WWW_USER_PASSWORD`.
+Antes de iniciar os serviços, valide a configuração sem imprimir seus valores:
 
-Para uma instalação nova, cada avaliador deve gerar seu próprio `.env`. Não envie esse arquivo junto ao projeto. As portas publicadas ficam vinculadas a `127.0.0.1`, permitindo acesso somente no computador que executa os containers.
+```powershell
+docker compose config --quiet
+```
 
-Em ambientes com volumes existentes, alterar o `.env` não troca automaticamente as senhas já gravadas nos bancos ou no usuário do Airflow. A rotação deve atualizar os serviços e o arquivo local de forma coordenada. Uma chave Fernet existente exige migração dos valores criptografados antes de ser substituída. Preserve os volumes para manter os dados.
+Se alguma variável obrigatória estiver vazia, o Compose interromperá a validação. Não use `docker compose config` sem `--quiet` ao preparar capturas ou arquivos para entrega, pois a saída pode incluir credenciais interpoladas.
 
 ### 3. Inicie os serviços
 
@@ -144,7 +165,7 @@ Aguarde a conclusão dos serviços `sqlserver-backup`, `sqlserver-init` e `airfl
 
 ### 4. Execute o pipeline
 
-Abra **[localhost:8080](http://localhost:8080)** e entre com as credenciais definidas no `.env`.
+Abra **[localhost:8080](http://localhost:8080)**. Na configuração padrão, o usuário é `admin`; a senha gerada fica em `_AIRFLOW_WWW_USER_PASSWORD` no `.env` local. Se alterar o usuário antes da primeira inicialização, utilize o valor de `_AIRFLOW_WWW_USER_USERNAME`.
 
 1. Localize `etl_incremental_adventureworks`.
 2. Ative o DAG, criado inicialmente em pausa.
@@ -237,7 +258,7 @@ Para a carga completa e a execução diária, ative `etl_incremental_adventurewo
 ### Conexão pelo DBeaver ou outro cliente SQL
 
 - **PostgreSQL:** host `localhost`, porta `5433` e banco, usuário e senha definidos no `.env`. A porta pode ser alterada por `POSTGRES_HOST_PORT`.
-- **SQL Server:** host `localhost`, porta `1433`, banco `AdventureWorks2019`, usuário `sa` e senha `MSSQL_SA_PASSWORD`.
+- **SQL Server:** host `localhost`, porta `1433`, banco `AdventureWorks2019`, usuário `sa` e senha definida em `MSSQL_SA_PASSWORD` no `.env`. A porta pode ser alterada por `MSSQL_HOST_PORT`.
 - **Airflow:** interface na porta `8080`, configurável por `AIRFLOW_PORT`.
 
 Entre containers, o PostgreSQL é acessado por `postgres:5432` e o SQL Server por `sqlserver:1433`.
@@ -264,6 +285,8 @@ docker compose logs sqlserver-backup sqlserver-init airflow-init
 - **SQL Server indisponível:** confira os logs de `sqlserver` e `sqlserver-init`, a senha `MSSQL_SA_PASSWORD` e a conclusão da restauração do backup.
 - **Calendário vazio após criar o schema:** execute o DAG principal. O preenchimento depende dos pedidos na staging e acontece em `load_dimensions`.
 - **Indicadores ausentes nos logs:** defina `AIRFLOW_LOGGING_LEVEL=INFO`, aplique com `docker compose up -d` e dispare uma nova execução. Mensagens omitidas em execuções anteriores com nível `WARNING` não são recuperadas.
+- **Variável obrigatória ausente:** em uma instalação nova, execute `scripts/configurar_ambiente.ps1`. Se já houver `.env`, confira as variáveis exigidas no `.env.example` sem substituir credenciais de uma instalação existente de forma isolada.
+- **Falha de autenticação após editar o `.env`:** as senhas dos serviços podem continuar com os valores anteriores. Confira o procedimento de alteração de credenciais e preserve os volumes.
 - **Pressão de memória:** reduza `AIRFLOW_PARALLELISM` e `AIRFLOW_MAX_ACTIVE_TASKS_PER_DAG` e aplique a configuração com `docker compose up -d`.
 
 ## Estrutura do projeto
@@ -287,13 +310,47 @@ ApacheAirflow-e-ETL/
 ├── data/
 │   ├── diagrama/
 │   └── img/
+├── scripts/
+│   ├── configurar_ambiente.ps1
+│   └── gerar_entrega.ps1
 ├── .env.example
 ├── .gitignore
 ├── docker-compose.yml
 └── readme.md
 ```
 
-[`aw_pipeline.py`](dags/aw_pipeline.py) concentra a extração incremental, a execução dos SQLs e a inicialização do DW. [`etl_incremental_vendas.py`](dags/etl_incremental_vendas.py) define as tarefas e dependências do fluxo principal. O ambiente usa o arquivo `docker-compose.yml`; `docker-compose.yml.bak` é uma cópia de configuração anterior.
+[`aw_pipeline.py`](dags/aw_pipeline.py) concentra a extração incremental, a execução dos SQLs e a inicialização do DW. [`etl_incremental_vendas.py`](dags/etl_incremental_vendas.py) define as tarefas e dependências do fluxo principal. O ambiente usa o arquivo [`docker-compose.yml`](docker-compose.yml). Os scripts em `scripts/` cuidam da configuração local e da montagem do pacote de entrega. O `.env` é criado localmente; `output/entrega/` é gerado pelo empacotamento. Ambos ficam fora do versionamento.
+
+## Entrega do projeto
+
+### Gerar o ZIP
+
+Execute na raiz do projeto:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/gerar_entrega.ps1
+```
+
+O pacote será criado em **`output/entrega/ApacheAirflow-e-ETL.zip`**. Ele contém as DAGs Python, os scripts SQL, as imagens, o diagrama editável, a documentação, o Compose, o `.env.example` e os dois scripts PowerShell. Também inclui as pastas vazias `config`, `plugins` e `logs` utilizadas pelos volumes locais.
+
+O empacotamento usa uma lista explícita de arquivos e exclui `.env`, histórico Git, logs de execução, caches, backups e outros arquivos de saída. Quando há um `.env` local, também verifica se os arquivos selecionados contêm seus valores secretos e interrompe a geração se encontrar uma correspondência. Gere novamente o ZIP após alterar o código ou a documentação; o script atualiza somente o pacote em `output/entrega/`.
+
+### Executar como avaliador
+
+Após extrair o ZIP, abra o PowerShell na pasta do projeto e execute:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/configurar_ambiente.ps1
+docker compose config --quiet
+docker compose up -d
+docker compose ps --all
+```
+
+Aguarde os serviços de preparação concluírem com código `0`, abra a interface do Airflow e execute `etl_incremental_adventureworks`, conforme o roteiro em **Como executar**. Cada avaliador utiliza credenciais próprias; o pacote não depende das senhas do autor.
+
+### Repositório e pacote de entrega
+
+O código-fonte está em **[davs22/ApacheAirflow-e-ETL](https://github.com/davs22/ApacheAirflow-e-ETL)**. Entregue esse endereço junto ao ZIP atualizado. O histórico Git não acompanha o pacote; o `.env` permanece somente na instalação local.
 
 ## Galeria
 
@@ -338,17 +395,3 @@ Registros visuais disponíveis no repositório.
 [Acessar o repositório](https://github.com/davs22/ApacheAirflow-e-ETL)
 
 </div>
-
-## Entrega do projeto
-
-Para gerar o ZIP da avaliação:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/gerar_entrega.ps1
-```
-
-O arquivo `output/entrega/ApacheAirflow-e-ETL.zip` contém o código, os scripts SQL, as imagens, o diagrama, a documentação e o `.env.example`. O empacotamento usa uma lista explícita de arquivos e exclui `.env`, histórico Git, logs de execução, caches, backups e outros arquivos de saída. Antes de gerar o pacote, verifica se algum arquivo selecionado contém os valores secretos do `.env` local.
-
-O avaliador deve extrair o ZIP, entrar na pasta do projeto, executar `scripts/configurar_ambiente.ps1` e iniciar os serviços com `docker compose up -d`. O ZIP não depende das credenciais do autor.
-
-O repositório público deve receber somente arquivos sem segredos. Senhas anteriormente publicadas precisam ser trocadas nos serviços; removê-las da versão atual não elimina cópias do histórico Git nem ZIPs antigos.
